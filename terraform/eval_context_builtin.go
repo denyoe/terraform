@@ -6,6 +6,7 @@ import (
 	"log"
 	"sync"
 
+	"github.com/hashicorp/terraform/experiments"
 	"github.com/hashicorp/terraform/instances"
 	"github.com/hashicorp/terraform/plans"
 	"github.com/hashicorp/terraform/providers"
@@ -297,7 +298,13 @@ func (ctx *BuiltinEvalContext) EvaluationScope(self addrs.Referenceable, keyData
 		InstanceKeyData: keyData,
 		Operation:       ctx.Evaluator.Operation,
 	}
-	return ctx.Evaluator.Scope(data, self)
+	scope := ctx.Evaluator.Scope(data, self)
+	var experiments experiments.Set
+	if mc := ctx.Evaluator.Config.DescendentForInstance(ctx.PathValue); mc != nil {
+		experiments = mc.Module.ActiveExperiments
+		scope.SetActiveExperiments(experiments)
+	}
+	return scope
 }
 
 func (ctx *BuiltinEvalContext) Path() addrs.ModuleInstance {
